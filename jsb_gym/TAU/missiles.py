@@ -1,7 +1,7 @@
 import jsbsim
 import numpy as np
 from jsb_gym.utils.utils import toolkit
-from jsb_gym.utils.controllers import PID
+from jsb_gym.utils.control import PID
 import pymap3d as pm
 
 class AIM(object):

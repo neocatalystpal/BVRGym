@@ -54,6 +54,6 @@ class AircraftNavigation:
     Theta_act_space_max: float
 
 @dataclass
-class AircraftSimulationConfig:
+class AircraftSimulation:
     Sim_time_step: float
     Control_time_step: float

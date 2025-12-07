@@ -1,4 +1,4 @@
-from jsb_gym.TAU.config.aircraft_dataclass import AircraftLimits, PIDGains, AircraftPIDGains, AircraftNavigation, AircraftSimulationConfig
+from jsb_gym.TAU.config.aircraft_dataclass import AircraftLimits, PIDGains, AircraftPIDGains, AircraftNavigation, AircraftSimulation
 
 fdm_xml= 'scripts/f16_test.xml'
 
@@ -14,11 +14,11 @@ aircraft_limits =AircraftLimits(phi_min=-180.0,
                thr_max=0.69)
 
 
-PIDGains_roll         = PIDGains(P=  0.01, I= 0.0,  D=  0.9, Deriv=0.0, Integ=0.0, Integ_max=1.0, Integ_min=-1.0)
+PIDGains_roll         = PIDGains(P=  0.01, I= 0.0,  D=  0.9, Deriv=0.0, Integ=0.0, Integ_max=0.2, Integ_min=-0.2)
 PIDGains_roll_sec     = PIDGains(P=  0.2, I= 0.0,  D=  0.2, Deriv=0.0, Integ=0.0, Integ_max=1.0, Integ_min=-1.0)
 PIDGains_pitch        = PIDGains(P=  0.3, I= 0.0, D=   1.0, Deriv=0.0, Integ=0.0, Integ_max=1.0, Integ_min=-1.0)
 PIDGains_rudder_theta = PIDGains(P=  0.05, I= 0.0, D=   1.0, Deriv=0.0, Integ=0.0, Integ_max=10.0, Integ_min=-10.0)
-PIDGains_rudder_psi   = PIDGains(P=  0.05, I= 0.0, D=   1.0)
+PIDGains_rudder_psi   = PIDGains(P=  0.05, I= 0.0, D=   1.0, Deriv=0.0, Integ=0.0, Integ_max=1.0, Integ_min=-1.0)
 PIDGains_elevator_psi = PIDGains(P=  0.1, I= 0.0, D=   4.0, Deriv=0.0, Integ=0.0, Integ_max=10.0, Integ_min=-10.0)
 
 
@@ -54,7 +54,7 @@ aircraft_navigation = AircraftNavigation(
 )
 
 
-AircraftSimulationConfig(
+aircraft_simulation =AircraftSimulation(
     Sim_time_step=12,
     Control_time_step=10
 )
