@@ -11,12 +11,6 @@ def delta_heading(target, current):
     return diff
 
 
-
-
-
-
-
-
 if __name__ == "__main__":
     for test_phi_ref, test_phi in [(10,90), (10,170), (-45,170), (-100, -45), (0,180), (180,0)]:
         print(f"phi_ref: {test_phi_ref}, phi: {test_phi} => roll_delta: {roll_circle_clip(test_phi_ref, test_phi)}")

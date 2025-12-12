@@ -77,3 +77,116 @@ class PID:
 		return self.Derivator
 
 
+
+
+from typing import Tuple
+
+class PID_discrete:
+    def __init__(self,
+                 Kp: float = 1.0,
+                 Ki: float = 0.0,
+                 Kd: float = 0.0,
+                 setpoint: float = 0.0,
+                 output_limits: Tuple[float, float] = (None, None),
+                 sample_time: float = None,
+                 tau: float = 0.02,  # derivative filter time constant (seconds)
+                 beta: float = 1.0   # setpoint weighting for proportional term
+                 ) -> None:
+        self.Kp = float(Kp)
+        self.Ki = float(Ki)
+        self.Kd = float(Kd)
+        self.setpoint = float(setpoint)
+        self.min_output, self.max_output = output_limits if output_limits is not None else (None, None)
+        self.sample_time = sample_time  # not enforced, user may pass variable dt
+        self.tau = float(tau) if tau is not None else 0.0
+        self.beta = float(beta)
+
+        # internal states
+        self._integral = 0.0
+        self._prev_measurement = None
+        self._prev_filtered_deriv = 0.0
+        self._last_output = 0.0
+
+    def reset(self):
+        """Reset internal state (integral, derivative history, last output)."""
+        self._integral = 0.0
+        self._prev_measurement = None
+        self._prev_filtered_deriv = 0.0
+        self._last_output = 0.0
+
+    def _clamp(self, value: float) -> float:
+        if (self.max_output is not None) and (value > self.max_output):
+            return self.max_output
+        if (self.min_output is not None) and (value < self.min_output):
+            return self.min_output
+        return value
+
+    def update(self, measurement: float, dt: float) -> float:
+        """
+        Compute PID output given a measurement and time step dt (seconds).
+
+        Args:
+            measurement: current process variable (PV)
+            dt: time step in seconds (must be > 0)
+
+        Returns:
+            control output (float) within output_limits if set.
+        """
+        if dt <= 0:
+            raise ValueError("dt must be > 0")
+
+        error = self.setpoint - measurement
+
+        # Proportional term with setpoint weighting (beta)
+        P = self.Kp * (self.beta * self.setpoint - measurement)
+
+        # Derivative term using measurement derivative (reduces derivative kick from setpoint changes)
+        if self._prev_measurement is None:
+            deriv_meas = 0.0
+        else:
+            deriv_meas = (measurement - self._prev_measurement) / dt
+
+        # first-order filter for derivative: filtered = (tau*prev + dt*deriv) / (tau + dt)
+        if self.tau > 0.0:
+            filtered = (self.tau * self._prev_filtered_deriv + dt * deriv_meas) / (self.tau + dt)
+        else:
+            filtered = deriv_meas
+
+        D = -self.Kd * filtered  # negative sign because derivative on measurement
+
+        # Tentative integral update (we'll do simple anti-windup after checking saturation)
+        self._integral += error * dt
+        I = self.Ki * self._integral
+
+        # Unclamped output
+        unclamped = P + I + D
+
+        # Clamp the output
+        output = self._clamp(unclamped)
+
+        # Simple anti-windup: if we are saturated and the integral is driving us further into saturation,
+        # then undo the last integration step (i.e. don't integrate while saturated unless integration helps)
+        saturated_high = (self.max_output is not None) and (unclamped > self.max_output)
+        saturated_low = (self.min_output is not None) and (unclamped < self.min_output)
+        if (saturated_high and error > 0) or (saturated_low and error < 0):
+            # revert the integration step we just applied
+            self._integral -= error * dt
+            I = self.Ki * self._integral
+            unclamped = P + I + D
+            output = self._clamp(unclamped)
+
+        # update stored states for next call
+        self._prev_measurement = measurement
+        self._prev_filtered_deriv = filtered
+        self._last_output = output
+
+        return output
+
+    def tunings(self):
+        return self.Kp, self.Ki, self.Kd
+
+    def set_output_limits(self, limits: Tuple[float, float]):
+        self.min_output, self.max_output = limits
+
+    def set_setpoint(self, sp: float):
+        self.setpoint = float(sp)

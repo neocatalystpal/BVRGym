@@ -114,3 +114,93 @@ class AircraftPIDAutopilot:
 		cmd = self.pitch_PID.update(current_value= diff)
 		cmd = np.clip(a = cmd, a_min = -1, a_max= 1)
 		self.elevator_cmd = cmd
+
+
+class MissilePIDAutopilot:
+	"""
+	Missile PID controller class
+	"""
+
+	def __init__(self, missile):
+		self.missile = missile
+		self.missile_PID_Gains = self.missile.conf.missile_PID_Gains
+		self.missile_navigation = self.missile.conf.missile_navigation
+		self.missile_limits = self.missile.conf.missile_limits
+		self.reset_controllers()
+	
+	def reset_controllers(self):
+		
+		self.roll_PID = PID(self.missile_PID_Gains.Roll)
+		self.pitch_PID = PID(self.missile_PID_Gains.Pitch)
+		self.heading_PID = PID(self.missile_PID_Gains.Heading)
+
+		self.rudder_cmd = 0.0
+		self.elevator_cmd = 0.0
+		self.aileron_cmd = 0.0
+
+		#self.alt_act_space = self.aircraft_navigation.Alt_act_space_min
+		#self.head_act_space = self.aircraft_navigation.Head_act_space_min
+		#self.theta_act_space = self.aircraft_navigation.Theta_act_space_min
+
+	def get_control_input(self, diff_head, diff_alt):
+		pass
+
+
+	def set_roll_PID(self, ref):
+        
+		# get reference value for control input 
+		diff = self.get_roll_delta(ref)
+		#print('roll : ', self.roll_ref, round(self.get_phi()), round(diff))
+		# set aileron
+		cmd = self.pid_roll.update(current_value=diff)
+		cmd =  np.clip(cmd, -self.conf.ctrl['aileron_clip'], self.conf.ctrl['aileron_clip'])
+		self.fdm['fcs/aileron-cmd-norm'] = - cmd 
+
+	def set_pitch_PID(self, ref):
+		self.theta_ref = ref
+		diff = self.theta_ref - self.get_theta()
+		cmd = self.pid_pitch.update(current_value= diff)
+		cmd =  np.clip(cmd, -self.conf.ctrl['elevator_clip'], self.conf.ctrl['elevator_clip'])
+		self.fdm['fcs/elevator-cmd-norm'] = -cmd
+
+	def set_yaw_PID(self, ref):
+		#self.psi_ref = self.cp.clip(ref)
+		self.psi_ref = ref
+		diff = self.get_heading_difference(self.psi_ref)
+		cmd = self.pid_heading.update(current_value= diff)
+		self.fdm['fcs/rudder-cmd-norm'] = np.clip(cmd, -self.conf.ctrl['rudder_clip'], self.conf.ctrl['rudder_clip'] )
+
+	def set_throttle(self,cmd = 0.7):
+		self.fdm['fcs/throttle-cmd-norm[0]'] = cmd
+
+	def set_altitude_PID(self, ref, theta_min, theta_max):
+		# angle between different altitudes 
+		diff_atl = ref - self.get_altitude()
+		self.theta_ref = np.degrees(np.arctan2(diff_atl, self.conf.PN['tan_ref']))
+		self.theta_ref = np.clip(a = self.theta_ref, a_min = theta_min, a_max = theta_max)
+		self.set_pitch_PID(self.theta_ref)
+
+
+	def acceleration_stage_done(self):
+		if self.get_sim_time_sec() < self.conf.PN['steady_flight_sec']:
+			# still accelerating
+			return False
+		else:
+			return True
+
+	def step_PID(self):
+		# steady flight before control
+		if not self.acceleration_stage_done():
+			#print('Acc')
+			self.set_throttle()
+			self.set_roll_PID(ref= 0.0)
+			self.set_pitch_PID(ref= self.theta0)
+			self.set_yaw_PID(ref= self.psi0)     
+		else:         
+			self.fdm.run()
+
+
+
+
+
+
