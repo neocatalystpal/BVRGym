@@ -1,87 +1,80 @@
 import numpy as np    
+import pymap3d as pm
+from jsb_gym.utils.geometry import angle_between
 
 class PN:
-    def __init__(self):
-        pass
-
-    def load_PN_parameters(self):
-
-        # targets flight dynamics model 
-        self.tgt = None
-        # position 
-        self.lat_tgt = None
-        self.long_tgt = None 
-        self.alt_tgt = None
-
-        self.dist_to_tgt = None
-        self.dist_to_tgt_old = None
-        self.altitude_to_tgt = None
-        self.altitude_to_tgt_old = None
-
-        self.sim_time_old = None
+    def __init__(self, conf):
+        self.N = conf.missile_navigation.N
+        self.dt = conf.missile_navigation.dt
         
-        self.position_tgt_NED = np.zeros(3)
-        self.velocity_tgt_NED = np.zeros(3)
-        self.velocity_NED = np.zeros(3)
-
-        self.velocity_relative_NED = np.zeros(3)
-        self.rotation_vector = np.zeros(3)
-        self.acceleration_cmd_NED = np.zeros(3)
-
-        self.velocity_NED_PN = np.zeros(3)
-
-        self.velocity_NE = np.zeros(3)
-        self.velocity_NE_PN = np.zeros(3)
-
-        self.velocity_HD = np.zeros(3)
-        self.velocity_HD_PN = np.zeros(3)
-
-        self.velocity_SD = np.zeros(3)
-        self.velocity_SD_PN = np.zeros(3)
 
 
-    def PN(self):
-        # set heading and pitch 
-        self.position_tgt_NED[0] = self.tgt_east
-        self.position_tgt_NED[1] = self.tgt_north
-        self.position_tgt_NED[2] = self.tgt_down
+    def get_target_ENU(self, missile):
+        # The local coordinate origin
+        lat0 = missile.get_lat_gc_deg() # deg
+        lon0 = missile.get_long_gc_deg()  # deg
+        h0 = missile.get_altitude()     # meters
 
-        self.velocity_tgt_NED[0] = self.tgt.get_v_east()
-        self.velocity_tgt_NED[1] = self.tgt.get_v_north()
-        self.velocity_tgt_NED[2] = self.tgt.get_v_down()
+        # The point of interest
+        lat = missile.target.get_lat_gc_deg() # deg
+        lon = missile.target.get_long_gc_deg()  # deg
+        h = missile.target.get_altitude()     # meters
 
-        #self.position_tgt_NED = self.position_tgt_NED + self.velocity_tgt_NED * self.dt_PN
-
-        self.velocity_NED[0] = self.get_v_east()
-        self.velocity_NED[1] = self.get_v_north()
-        self.velocity_NED[2] = self.get_v_down()
+        east, north , up = pm.geodetic2enu(lat, lon, h, lat0, lon0, h0)
         
-        self.velocity_relative_NED = self.velocity_tgt_NED - self.velocity_NED
+        return np.array([east, north, up])
+    
+    def get_target_v_ENU(self, missile):
+        v_east =missile.target.get_v_east()
+        v_north = missile.target.get_v_north()
+        v_up = missile.target.get_v_up()
 
-        self.rotation_vector = (np.cross(self.position_tgt_NED,self.velocity_relative_NED)) / (self.position_tgt_NED @ self.position_tgt_NED)
+        return np.array([v_east, v_north, v_up])
+
+    def get_v_ENU(self, missile):
+        v_east = missile.get_v_east()
+        v_north = missile.get_v_north()
+        v_up = missile.get_v_up()
+
+        return np.array([v_east, v_north, v_up])
+
+    def get_heading_rel_direction(self, v1,v2):
+        if np.cross(v1, v2)[2] < 0:
+            return 1
+        return -1
+
+
+    def get_guidance(self, missile):
+        taget_ENU = self.get_target_NED(missile)
         
-        self.acceleration_cmd_NED = self.conf.PN['N'] * np.cross(self.velocity_relative_NED , self.rotation_vector)
+        target_v_ENU = self.get_target_v_NED(missile)
 
-        self.velocity_NED_PN = self.velocity_NED + self.acceleration_cmd_NED*self.conf.PN['dt']
-
-        # get heading 
-        self.velocity_NE[0] = self.velocity_NED[0].copy()
-        self.velocity_NE[1] = self.velocity_NED[1].copy()
-
-        self.velocity_NE_PN[0] = self.velocity_NED_PN[0].copy()
-        self.velocity_NE_PN[1] = self.velocity_NED_PN[1].copy()
-
-        heading = self.tk.angle_between(v1=self.velocity_NE, v2= self.velocity_NE_PN, in_deg= True)
-
-        if np.cross(self.velocity_NE, self.velocity_NE_PN)[2] < 0:
-            self.heading_ref = self.heading_ref + heading
-        else:
-            self.heading_ref = self.heading_ref - heading
+        v_ENU = self.get_v_NED(missile)
         
-        self.heading_ref = self.tk.truncate_heading(self.heading_ref)
+        v_rel_ENU = target_v_ENU - v_ENU
 
-        self.theta_ref = -np.clip(a=self.acceleration_cmd_NED[2], a_min = self.conf.PN['theta_min'], a_max = self.conf.PN['theta_max'])
+        rotation_vector = (np.cross(taget_ENU, v_rel_ENU)) / (taget_ENU @ taget_ENU)
         
-        self.velocity_relative_NED_norm = np.linalg.norm(self.velocity_relative_NED)
-        self.time_to_impact = self.position_tgt_NED_norm/self.velocity_relative_NED_norm
-        self.altitude_ref = self.tgt.get_altitude() - self.velocity_tgt_NED[2]*self.time_to_impact
+        acc_cmd_ENU = self.N * np.cross(v_rel_ENU , rotation_vector)
+
+        v_ENU_PN = v_ENU + acc_cmd_ENU*self.dt
+        
+        # get heading
+        v1 = v_ENU[:-1]
+        v2 = v_ENU_PN[:-1]
+        
+        heading_PN = angle_between(v1, v2, in_deg= True)
+
+        hrd = self.get_heading_rel_direction(v1, v2)
+        
+        heading_cmd = (missile.get_psi() +  hrd * heading_PN) %360
+        
+        pitch = angle_between(v1, v_ENU, in_deg= True)
+
+        pitch_PN = angle_between(v2, v_ENU_PN, in_deg= True)
+        
+        pitch_diff = pitch_PN - pitch
+    
+        pitch_cmd = missile.get_theta() + pitch_diff
+
+        return heading_cmd, pitch_cmd

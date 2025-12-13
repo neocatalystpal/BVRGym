@@ -1,3 +1,5 @@
+import numpy as np
+
 def translate_semi_to_full_circle(self, angle):
         '''
         From
@@ -21,5 +23,4 @@ def angle_between(self, v1, v2, in_deg = False):
         angle = np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
         if in_deg:
             return np.degrees(angle)
-        else:
-            return angle
+        return angle

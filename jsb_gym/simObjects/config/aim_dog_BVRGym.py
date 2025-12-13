@@ -38,12 +38,14 @@ PN = {
 ctrl = {
     'alt_max': 17e3,
     'alt_min': 1e3,
+
     'phi_min': -180.0,
     'phi_max': 180.0,
     'theta_min': -90.0,
     'theta_max': 90.0,
     'psi_min': 0.0,
     'psi_max': 360.0,
+    
     'rudder_clip' : 1,
     'elevator_clip': 1,
     'aileron_clip': 1,

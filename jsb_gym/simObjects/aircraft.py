@@ -1,9 +1,9 @@
 from jsb_gym.utils.autopilot import AircraftPIDAutopilot
-from jsb_gym.TAU.aircraft_base import Aircraft
+from jsb_gym.simObjects.FDMObject import FDMObject
 from jsb_gym.utils.navigation import delta_heading
 import time
 
-class F16BVR(Aircraft):
+class F16BVR(FDMObject):
     def __init__(self, conf):
         super().__init__(conf)
         self.conf = conf
@@ -28,7 +28,7 @@ class F16BVR(Aircraft):
         action_altitude = action[1]
         action_throttle = action[2]
 
-        diff_head = delta_heading(action_heading,self.get_psi() )
+        diff_head = delta_heading(action_heading, self.get_psi() )
         diff_alt = action_altitude - self.get_altitude()
 
         for _ in range(self.aircraft_simulation_config.Control_time_step):

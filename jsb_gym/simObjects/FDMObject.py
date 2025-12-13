@@ -1,15 +1,13 @@
 import jsbsim
-from jsb_gym.utils.utils import toolkit
 import numpy as np
+from jsb_gym.utils.units import m2f, f2m, lbs2kg
 
-class Aircraft(object):
+class FDMObject(object):
     def __init__(self, conf):
         
         self.fdm = jsbsim.FGFDMExec('.', None)
         self.fdm.load_script(conf.fdm_xml)
         self.fdm.set_output_directive('data_output/flightgear.xml')
-        
-        self.tk = toolkit()
 
     def reset(self, lat, long, alt, vel, heading):
         
@@ -17,9 +15,9 @@ class Aircraft(object):
         self.fdm.set_property_value("ic/lat-gc-deg", lat)
         self.fdm.set_property_value("ic/long-gc-deg", long)
         # input  altitude in meters 
-        self.fdm.set_property_value("ic/h-sl-ft", self.tk.m2f(alt))
+        self.fdm.set_property_value("ic/h-sl-ft", m2f(alt))
         # input vel in m/s      
-        self.fdm['ic/u-fps'] = self.tk.m2f(vel)
+        self.fdm['ic/u-fps'] = m2f(vel)
         # input  heading in deg    
         self.fdm['ic/psi-true-rad'] = np.radians(heading)
 
@@ -63,25 +61,25 @@ class Aircraft(object):
 
 
     def get_true_airspeed(self):
-        return self.tk.f2m(self.fdm['velocities/vt-fps'])
+        return f2m(self.fdm['velocities/vt-fps'])
 
 
     def get_v_north(self):
-        return self.tk.f2m(self.fdm['velocities/v-north-fps'])
+        return f2m(self.fdm['velocities/v-north-fps'])
 
     def get_v_east(self):
         # returns vector component for velocity in east direction in meters per second
-        return self.tk.f2m(self.fdm['velocities/v-east-fps'])
+        return f2m(self.fdm['velocities/v-east-fps'])
 
     def get_v_down(self):
-        return self.tk.f2m(self.fdm['velocities/v-down-fps'])
+        return f2m(self.fdm['velocities/v-down-fps'])
 
 
     def get_u(self):
-        return self.tk.f2m(self.fdm['u-fps'])
+        return f2m(self.fdm['u-fps'])
     
     def get_total_fuel(self):
-        return self.tk.lbs2kg(self.fdm['propulsion/total-fuel-lbs'])
+        return lbs2kg(self.fdm['propulsion/total-fuel-lbs'])
 
     def set_retract_gear(self):
         self.fdm['gear/gear-pos-norm'] = 0
