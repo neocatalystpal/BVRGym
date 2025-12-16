@@ -35,7 +35,8 @@ class F16BVR(FDMObject):
             aileron_cmd, elevator_cmd, rudder_cmd	= self.aircraft_control.get_control_input(diff_head, diff_alt)
             self.command_aircraft(aileron_cmd, elevator_cmd, rudder_cmd, action_throttle)    
             self.fdm.run()
-            time.sleep(0.005)
+            if self.conf.fg_sleep_time is not None:
+                time.sleep(self.conf.fg_sleep_time)
 
 
     def command_aircraft(self, aileron_cmd, elevator_cmd, rudder_cmd, throttle_cmd):

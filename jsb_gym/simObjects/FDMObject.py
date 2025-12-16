@@ -7,7 +7,8 @@ class FDMObject(object):
         
         self.fdm = jsbsim.FGFDMExec('.', None)
         self.fdm.load_script(conf.fdm_xml)
-        self.fdm.set_output_directive('data_output/flightgear.xml')
+        if conf.data_output_xml is not None:
+            self.fdm.set_output_directive(conf.data_output_xml)
 
     def reset(self, lat, long, alt, vel, heading):
         
