@@ -1,6 +1,6 @@
 import numpy as np    
 import pymap3d as pm
-from jsb_gym.utils.geometry import angle_between
+from jsb_gym.utils.goespatial import angle_between
 
 class PN:
     def __init__(self, conf):
