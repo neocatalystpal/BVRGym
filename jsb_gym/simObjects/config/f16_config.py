@@ -3,7 +3,6 @@ from data_classes import aircraft_dataclass as ADC
 fdm_xml= 'scripts/f16_test.xml'
 data_output_xml= None
 fg_sleep_time= None
-tacview_output_dir = None
 
 aircraft_limits =ADC.AircraftLimits(phi_min=-180.0,
                phi_max=180.0,

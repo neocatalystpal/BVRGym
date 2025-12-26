@@ -8,13 +8,13 @@ def to_360(angle):
 
 def dinstance_between_agents(own_agent, target_agent):
     # doesnt really matter which is own and which is target here, since distance is symmetric
-    lat0 = own_agent.agent.get_lat_gc_deg()
-    lon0 = own_agent.agent.get_long_gc_deg()
-    h0   = own_agent.agent.get_altitude()
+    lat0 = own_agent.simObj.get_lat_gc_deg()
+    lon0 = own_agent.simObj.get_long_gc_deg()
+    h0   = own_agent.simObj.get_altitude()
 
-    lat = target_agent.agent.get_lat_gc_deg()
-    lon = target_agent.agent.get_long_gc_deg()
-    h   = target_agent.agent.get_altitude()
+    lat = target_agent.simObj.get_lat_gc_deg()
+    lon = target_agent.simObj.get_long_gc_deg()
+    h   = target_agent.simObj.get_altitude()
     e, n, u = pm.geodetic2enu(lat, lon, h, lat0, lon0, h0, ell=None, deg=True)
     
     return np.linalg.norm(np.array([e, n, u]))
@@ -22,13 +22,13 @@ def dinstance_between_agents(own_agent, target_agent):
 
 def bearing_between_agents(own_agent, target_agent):
     # returns bearing from own_agent to target_agent in degrees
-    lat0 = own_agent.agent.get_lat_gc_deg()
-    lon0 = own_agent.agent.get_long_gc_deg()
-    h0   = own_agent.agent.get_altitude()
+    lat0 = own_agent.simObj.get_lat_gc_deg()
+    lon0 = own_agent.simObj.get_long_gc_deg()
+    h0   = own_agent.simObj.get_altitude()
 
-    lat = target_agent.agent.get_lat_gc_deg()
-    lon = target_agent.agent.get_long_gc_deg()
-    h   = target_agent.agent.get_altitude()
+    lat = target_agent.simObj.get_lat_gc_deg()
+    lon = target_agent.simObj.get_long_gc_deg()
+    h   = target_agent.simObj.get_altitude()
     e, n, u = pm.geodetic2enu(lat, lon, h, lat0, lon0, h0, ell=None, deg=True)
     
     bearing_rad = np.arctan2(e, n)  # arctan2 returns angle between -pi and pi

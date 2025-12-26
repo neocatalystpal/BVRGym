@@ -1,20 +1,20 @@
 from dataclasses import dataclass
 
 @dataclass
-class RLAgent:
+class Agent_parameters:
     ammo: int
-    lat: float = 0.0
-    long: float = 0.0
-    alt: float = 0.0
-    vel: float = 0.0
-    heading: float = 0.0
+    lat: float
+    long: float 
+    alt: float 
+    vel: float 
+    heading: float 
 
 
 @dataclass
-class BTAgent:
+class BT_parameters:
     ammo: int
-    lat: float = 0.0
-    long: float = 0.0
-    alt: float = 0.0
-    vel: float = 0.0
-    heading: float = 0.0
+    lat: float 
+    long: float 
+    alt: float 
+    vel: float 
+    heading: float 

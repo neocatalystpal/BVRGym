@@ -3,7 +3,6 @@ from  data_classes import missile_dataclass as MDC
 fdm_xml= 'scripts/AIM_test.xml'
 data_output_xml= None
 fg_sleep_time= None
-tacview_output_dir = None
 
 missile_limits =MDC.MissileLimits(phi_min=-180.0,
                phi_max=180.0,
