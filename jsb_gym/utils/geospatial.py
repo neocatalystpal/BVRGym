@@ -37,6 +37,12 @@ def bearing_between_agents(own_agent, target_agent):
     return bearing_deg
 
 
+def relative_bearing_between_agents(own_agent, target_agent):
+    bearing_to_enemy = bearing_between_agents(own_agent, target_agent)
+    own_heading = own_agent.simObj.get_psi()
+    angle = (bearing_to_enemy - own_heading + 180) % 360 - 180
+    return angle
+
 
 
 def unit_vector(vector):
@@ -53,3 +59,15 @@ def angle_between(v1, v2, in_deg = False):
             return np.degrees(angle)
         return angle
 
+def dinstance_between_simObj_agent(own_simObj, target_agent):
+    # doesnt really matter which is own and which is target here, since distance is symmetric
+    lat0 = own_simObj.get_lat_gc_deg()
+    lon0 = own_simObj.get_long_gc_deg()
+    h0   = own_simObj.get_altitude()
+
+    lat = target_agent.simObj.get_lat_gc_deg()
+    lon = target_agent.simObj.get_long_gc_deg()
+    h   = target_agent.simObj.get_altitude()
+    e, n, u = pm.geodetic2enu(lat, lon, h, lat0, lon0, h0, ell=None, deg=True)
+    
+    return np.linalg.norm(np.array([e, n, u]))

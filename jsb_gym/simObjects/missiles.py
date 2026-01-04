@@ -3,6 +3,7 @@ from jsb_gym.simObjects.FDMObject import FDMObject
 from jsb_gym.utils.guidance_laws import PN
 import time
 from jsb_gym.utils.autopilot import MissilePIDAutopilot
+from jsb_gym.utils.geospatial import dinstance_between_simObj_agent
 
 class AAMBVR(FDMObject):
     def __init__(self, conf):
@@ -11,18 +12,25 @@ class AAMBVR(FDMObject):
         self.missile_control = MissilePIDAutopilot(self)
         self.PN = PN(conf)
         self.missile_simulation_config = self.conf.missile_simulation
+        self.missile_performance = self.conf.missile_performance
+        self.reset_operational_state()
 
-    def reset(self, lat, long, alt, vel, heading):
-        super().reset(lat, long, alt, vel, heading)
+    def reset_operational_state(self):
         self.target = None
+
         self.target_lost = False
         self.target_hit = False
         self.active = False
         self.alive = True
         
         self.lost_count = 0
-        self.target_NED_norm_min = None
-        self.target_NED_norm_old = None
+        self.target_norm = None
+        self.target_norm_old = None
+
+
+    def reset(self, lat, long, alt, vel, heading):
+        super().reset(lat, long, alt, vel, heading)
+        
 
     def is_alive(self):
         return self.alive
@@ -30,7 +38,7 @@ class AAMBVR(FDMObject):
     def is_ready_to_launch(self):
         return not self.active and self.alive and not self.target_lost and not self.target_hit
 
-    def is_tracking_target(self):
+    def is_active(self):
         return self.active and self.alive and not self.target_lost and not self.target_hit
 
     def is_target_hit(self):
@@ -47,24 +55,57 @@ class AAMBVR(FDMObject):
         '''
         self.target = target
 
-    def launch(self):
-        pass
+    def launch(self, carrier_aircraft):
+        if self.is_alive():
+            self.active = True
+            lat = carrier_aircraft.simObj.get_lat_gc_deg()
+            long = carrier_aircraft.simObj.get_long_gc_deg()
+            alt = carrier_aircraft.simObj.get_altitude()
+            vel = carrier_aircraft.simObj.get_mach()
+            heading = carrier_aircraft.simObj.get_psi()
 
+            self.reset(lat, long, alt, vel, heading)
+
+
+    def is_target_within_effective_range(self):
+        
+        if self.target_norm <= self.missile_performance.effective_radius:
+            self.target_hit = True
+            self.active = False
+            self.alive = False
+            
+            # set hit to the target
+            self.target.healthPoints -= 1
+            return True
+        return False
 
     def is_mach_low(self):
-        return self.get_Mach() < self.conf.PN['target_lost_below_mach'] and self.acceleration_stage_done()
+        if self.missile_control.acceleration_stage_done() and self.get_mach() < self.missile_performance.target_lost_below_mach:
+            self.target_lost = True
+            self.target_hit = False
+            self.active = False
+            self.alive = False
+            return True
+        return False
 
     def is_alt_low(self):
-        return self.get_altitude() < self.conf.PN['target_lost_below_alt']
+        if self.get_altitude() < self.missile_performance.target_lost_below_alt:
+            self.target_lost = True
+            self.target_hit = False
+            self.active = False
+            self.alive = False
+            return True
+        return False
 
     def is_target_lost(self):
         # check if missile missed         
-        if (self.position_tgt_NED_norm_old != None) \
-            and (self.position_tgt_NED_norm_old < self.position_tgt_NED_norm) \
-            and (self.position_tgt_NED_norm < 3e3):
-            self.count_lost += 1
-            if self.count_lost > self.conf.PN['count_lost']:
-                #self.target_lost = True
+        if self.target_norm_old > self.target_norm:
+            self.lost_count += 1
+            if self.lost_count > self.missile_performance.lost_count:
+                self.target_lost = True
+                self.target_hit = False
+                self.active = False
+                self.alive = False
                 return True
             else:
                 return False
@@ -72,18 +113,25 @@ class AAMBVR(FDMObject):
             self.count_lost = 0
             return False
 
-    def step(self):        
+    def step(self):   
+        
+        self.target_norm_old = dinstance_between_simObj_agent(self, self.target)     
+        
         for _ in range(self.missile_simulation_config.Sim_time_step):
-            
-            self._step()
+            self.target_norm = dinstance_between_simObj_agent(self, self.target)
+            self.is_mach_low()
+            self.is_alt_low()
+            #self.is_target_lost()
+            self.is_target_within_effective_range()
 
+            self._step()
 
     def _step(self):
 
         heading_cmd, altitude_cmd = self.PN.get_guidance(self)
         
         for _ in range(self.missile_simulation_config.Control_time_step):
-            
+                
             aileron_cmd, elevator_cmd, rudder_cmd, throttle_cmd	= self.missile_control.get_control_input(heading_cmd, altitude_cmd)
             self.command_missile(aileron_cmd, elevator_cmd, rudder_cmd, throttle_cmd)  
             self.fdm.run()
@@ -102,8 +150,6 @@ class AAMBVR(FDMObject):
 
 
 
-    def is_within_warhead_range(self):
-        return self.position_tgt_NED_norm <= self.conf.PN['warhead']
 
 
 

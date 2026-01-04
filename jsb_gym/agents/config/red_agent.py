@@ -19,4 +19,4 @@ aircraft_name = 'F-16'
 
 agent_name = "BT"
 
-team = "Blue"
+team = "Red"

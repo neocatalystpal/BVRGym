@@ -11,17 +11,17 @@ class TacviewLogger:
             self.data_logs[i.conf.agent_name] = {}
             self.data_logs[i.conf.agent_name] = {'name':i.conf.agent_name, 'aircraft_name': i.conf.aircraft_name, 'team': i.conf.team}
             self.data_logs[i.conf.agent_name][i.conf.agent_name] = []
+            self.data_logs[i.conf.agent_name]['ammo'] = {}
             for j in i.ammo.keys():
-                self.data_logs[i.conf.agent_name][j] = []
+                self.data_logs[i.conf.agent_name]['ammo'][j] = []
 
     def log_flight_data(self):
 
         for i in self.env.all_agents:
             self.data_logs[i.conf.agent_name][i.conf.agent_name].append(self.get_current_data(i))
-            
-            #for j in i.ammo.keys():
-            #    if i.ammo[j].is_tracking_target():
-            #        data_logger(data_loggs[i.name][j], i.ammo[j], time_ref=i.fdm)
+            for j in i.ammo.keys():
+                if i.ammo[j].is_active():
+                    self.data_logs[i.conf.agent_name]['ammo'][j].append(self.get_current_missile_data(i.ammo[j], i))
 
 
     def get_current_data(self, agent):
@@ -36,7 +36,22 @@ class TacviewLogger:
         }
         return log
 
+    def get_current_missile_data(self, missile, agent):
+        log = {
+        "Time": agent.simObj.get_sim_time_sec(),
+        "Longitude": missile.get_long_gc_deg(),
+        "Latitude": missile.get_lat_gc_deg(),
+        "Altitude": missile.get_altitude(),
+        "Roll (deg)": missile.get_phi(),
+        "Pitch (deg)": missile.get_theta(),
+        "Yaw (deg)": missile.get_psi(),
+        }
+        return log
+
+
     def save_logs(self):
         for i in self.data_logs:
             pd.DataFrame(self.data_logs[i][i]).to_csv(f"{self.tacview_output_dir}/{self.data_logs[i]['aircraft_name']} ({self.data_logs[i]['name']}) [{self.data_logs[i]['team']}].csv", index=False)
-        #pd.DataFrame(data_loggs['f16r']).to_csv("Tacview/F-16 (Randy) [Red].csv", index=False)
+            for j in self.data_logs[i]['ammo']:
+                pd.DataFrame(self.data_logs[i]['ammo'][j]).to_csv(f"{self.tacview_output_dir}/AIM-120 AMRAAM (AIM{j}) [{self.data_logs[i]['team']}].csv", index=False)
+              

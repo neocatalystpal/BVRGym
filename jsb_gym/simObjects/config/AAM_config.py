@@ -31,16 +31,12 @@ missile_navigation = MDC.MissileNavigation(
     dt = 0.1,
     cp = 360,
     acceleration_stage_in_sec = 2,
-    target_lost_below_mach = 1,
-    target_lost_below_alt = 1e3,
     dive_at= 30e3,  
     tan_ref= 10e3,
-    count_lost= 10,
     theta_min_cruise= -30.0,
     theta_max_cruise= 30.0,
     theta_min= -80.0,
     theta_max= 80.0,
-    effective_radius= 300,
     alt_cruise= 15e3
 )
 
@@ -48,5 +44,12 @@ missile_navigation = MDC.MissileNavigation(
 missile_simulation =MDC.MissileSimulation(
     Sim_time_step=12,
     Control_time_step=10
+)
+
+missile_performance = MDC.MissilePerformance(
+    target_lost_below_mach= 1.0,
+    target_lost_below_alt= 0.0,
+    lost_count=3,
+    effective_radius=300,
 )
 

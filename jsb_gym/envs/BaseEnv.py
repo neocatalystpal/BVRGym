@@ -4,10 +4,14 @@ from gymnasium import spaces
 import numpy as np
 
 from jsb_gym.agents.config import blue_agent, red_agent
-from jsb_gym.agents.agents import BaseBVRAgent
+from jsb_gym.agents.agents import BaseBVRAgent, BTBVRAgent
 
 from jsb_gym.utils.geospatial import dinstance_between_agents, bearing_between_agents, to_360
 from jsb_gym.utils.loggers import TacviewLogger
+
+from jsb_gym.utils.scale import scale_between_inv, scale_between
+
+from jsb_gym.bts.bts import BVRBT
 
 class BVRBase(gym.Env):
     def __init__(self, conf):
@@ -23,16 +27,24 @@ class BVRBase(gym.Env):
         self.state = None
         self.done = False
         self.tacview_logger = None
+        self.observation = {}
+
 
     def reset(self):
         
         self.blue_agent = BaseBVRAgent(blue_agent, self)
-        self.red_agent = BaseBVRAgent(red_agent, self)
-
+        
+        self.red_agent = BTBVRAgent(red_agent, self)
+        #self.red_BT = BVRBT(self.red_agent)
+        self.red_agent.load_BT(BVRBT)
+        
         self.all_agents = [self.blue_agent, self.red_agent]
 
         self.blue_agent.set_target(self.red_agent)
+
         self.red_agent.set_target(self.blue_agent)
+        
+
 
         self.update_state()
 
@@ -49,72 +61,95 @@ class BVRBase(gym.Env):
                 self.tacview_logger.log_flight_data()
         
         
-            
-
-
     def update_state(self):
+        self.update_observation()
+        obs_nn = self.from_obs2nn(self.blue_agent)
+        
         if self.state is None:
-            self.state = np.tile(self.get_observation(), (self.obs_shape[0], 1))
+            self.state = np.tile(obs_nn, (self.obs_shape[0], 1))
         else:
             self.state = np.roll(self.state, shift=-1, axis=0)
-            self.state[-1,:] = self.get_observation()
+            self.state[-1,:] = obs_nn
 
-    def get_observation(self):
+    def update_observation(self):
         
-        bearing = to_360(bearing_between_agents(self.blue_agent, self.red_agent))
-        # enemy missile active 
-        # own missile active
-        heading = self.blue_agent.simObj.get_psi()
-        mach = self.blue_agent.simObj.get_mach()
-        altitude = self.blue_agent.simObj.get_altitude()
+        self.observation['bearing'] = to_360(bearing_between_agents(self.blue_agent, self.blue_agent.target))
+        self.observation['heading'] = self.blue_agent.simObj.get_psi()
+        self.observation['mach'] = self.blue_agent.simObj.get_mach()
+        self.observation['altitude'] = self.blue_agent.simObj.get_altitude()
 
-        d = dinstance_between_agents(self.blue_agent, self.red_agent)
+        self.observation['d'] = dinstance_between_agents(self.blue_agent, self.blue_agent.target)
 
-        enemy_bearing = to_360(bearing_between_agents(self.red_agent, self.blue_agent)) 
+        self.observation['enemy_bearing'] = to_360(bearing_between_agents(self.red_agent, self.red_agent.target)) 
 
-        enemy_heading = self.red_agent.simObj.get_psi()
-        enemy_mach = self.red_agent.simObj.get_mach()
-        enemy_altitude = self.red_agent.simObj.get_altitude()
+        self.observation['enemy_heading'] = self.red_agent.simObj.get_psi()
+        self.observation['enemy_mach'] = self.red_agent.simObj.get_mach()
+        self.observation['enemy_altitude'] = self.red_agent.simObj.get_altitude()
 
-        return np.array([
-            bearing,
-            heading,
-            mach,
-            altitude,
-            d,
-            enemy_bearing,
-            enemy_heading,
-            enemy_mach,
-            enemy_altitude
-        ], dtype=np.float32)
-
+        self.observation['own_missile_active'] = 0
+        self.observation['enemy_missile_active'] = 0
+        
 
     def step(self, action):
         # apply action to agent
+        action = self.from_nn2agent(action, self.blue_agent)
         self.blue_agent.apply_action(action)
-        self.red_agent.apply_action(action)
-        # step sim objects
+        self.red_agent.apply_BT_action()
         # get new observation
+        self.update_state()
+        
+        self.done = self.is_done()
         # calculate reward
         # check done
-        done = False
+        
         reward = 0.0
 
-        return None, reward, done, None
+        return self.state, reward, self.done, (self.blue_agent.healthPoints, self.red_agent.healthPoints)
 
+    def get_red_agent_actions(self):
+        pass
 
-    def from_env2NN(self, agent_state):
-        """
-        Convert agent state to environment state representation.
-        """
-        raise NotImplementedError("This method should be overridden by subclasses.")
+    def from_obs2nn(self, agent):
+        
+        bearing_sin = np.sin(np.radians(self.observation['bearing']))
+        bearing_cos = np.cos(np.radians(self.observation['bearing']))
+        heading_sin = np.sin(np.radians(self.observation['heading']))
+        heading_cos = np.cos(np.radians(self.observation['heading']))
+        
+        mach = scale_between(self.observation['mach'], a_min = 0.1, a_max = 1.5)
+        altitude = scale_between(self.observation['altitude'], a_min = agent.simObj.conf.aircraft_limits.alt_min,
+                               a_max = agent.simObj.conf.aircraft_limits.alt_max )
+        d = scale_between(self.observation['d'], a_min = 0.0, a_max = 120e3)
+        
+        enemy_bearing_sin= np.sin(np.radians(self.observation['enemy_bearing']))
+        enemy_bearing_cos= np.cos(np.radians(self.observation['enemy_bearing']))
+        enemy_heading_sin = np.sin(np.radians(self.observation['enemy_heading']))
+        enemy_heading_cos = np.cos(np.radians(self.observation['enemy_heading']))
+        
+        enemy_mach = scale_between(self.observation['enemy_mach'], a_min = 0.1, a_max = 1.5)
+        enemy_altitude = scale_between(self.observation['enemy_altitude'], a_min = agent.simObj.conf.aircraft_limits.alt_min,
+                               a_max = agent.simObj.conf.aircraft_limits.alt_max )
+        
+        return np.array([bearing_sin, bearing_cos, heading_sin, heading_cos, mach, altitude, d, enemy_bearing_sin, enemy_bearing_cos, 
+                         enemy_heading_sin, enemy_heading_cos, enemy_mach, enemy_altitude, 
+                         self.observation['own_missile_active'], self.observation['enemy_missile_active']])
+        
+        
+        
+
     
-    def from_NN2env(self, env_state):
-        """
-        Convert environment state to agent state representation.
-        """
-        raise NotImplementedError("This method should be overridden by subclasses.")
-
+    def from_nn2agent(self, action, agent):
+        # heading 
+        action[0] = scale_between_inv(action[0],
+                                      a_min= agent.simObj.conf.aircraft_limits.psi_min,
+                                        a_max= agent.simObj.conf.aircraft_limits.psi_max)        
+        # altitude 
+        action[1] = scale_between_inv(action[1],
+                                      a_min= agent.simObj.conf.aircraft_limits.alt_min,
+                                        a_max= agent.simObj.conf.aircraft_limits.alt_max)
+        # throttle full thrust without or with afterburner 
+        action[2] = 0.49 if action[2] <= 0.0 else 0.69
+        return action
 
 
     def get_reward(self, is_done):
@@ -132,7 +167,13 @@ class BVRBase(gym.Env):
             return 0
 
     def is_done(self):
+        for agent in self.all_agents:
+            if agent.healthPoints <= 0.0:
+                return True
+            
         
+        if self.blue_agent.simObj.get_sim_time_sec() >= self.conf.max_episode_time:
+            return True 
         # if 
         # check if any missile hit target or lost
         # 
@@ -141,14 +182,7 @@ class BVRBase(gym.Env):
         # check if all missiles lost
         # check if max time reached
         
-        # both out of missiles 
-        pass
- 
-
-
+        # both out of missiles
+        return False
                
-
-    def render(self):
-        pass
-        # visualize the environment
 
