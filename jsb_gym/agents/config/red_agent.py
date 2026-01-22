@@ -6,8 +6,8 @@ agent_parameters = Agent_parameters(
     ammo=4,
     lat=58.8,
     long=18.0,
-    alt=3000.0,
-    vel=250.0,
+    alt=7000.0,
+    vel=330.0,
     heading=180.0
 )
 

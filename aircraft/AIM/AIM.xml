@@ -1,15 +1,13 @@
 <?xml version="1.0"?>
-<?xml-stylesheet type="text/xsl" href="http://jsbsim.sourceforge.net/JSBSim.xsl"?>
-<fdm_config name="AIM - Simplified model of AMRAAM" version="2.0" release="ALPHA"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:noNamespaceSchemaLocation="http://jsbsim.sourceforge.net/JSBSim.xsd">
+<fdm_config name="Air to air Missile" version="2.0">
 
     <fileheader>
         <author> Edvards Scukins</author>
         <filecreationdate> 2021-01-14 </filecreationdate>
         <version> $Revision: 1.0 $ </version>
         <description>
-          Rough model of the DIRECT Missile. I took ogel model  
+          Rough model of a BVR Missile. 
+          The aerodynamics are not accurate but the behavior mimics some of the caracteristics of a real missile.  
         </description>
       <note>
         This model was created using publicly available data, publicly available
@@ -208,17 +206,17 @@
           <table>
             <independentVar lookup="row">aero/alpha-rad</independentVar>
             <tableData>
-              -0.87 -0.045
-              -0.69 -0.045
-              -0.52 -0.045
-              -0.34 -0.045
-              -0.17 -0.045
+              -0.87 -0.545
+              -0.69 -0.445
+              -0.52 -0.345
+              -0.34 -0.290
+              -0.17 -0.245
                0.00  0.000
-               0.17  0.045
-               0.34  0.045
-               0.52  0.045
-               0.69  0.045
-               0.87  0.045
+               0.17  0.245
+               0.34  0.290
+               0.52  0.345
+               0.69  0.445
+               0.87  0.545
             </tableData>
           </table>
       </product>
@@ -237,11 +235,12 @@
             <independentVar lookup="row">velocities/mach</independentVar>
             <tableData>
                 0.00     0.002
-                1.0      0.013
-                2.0      0.013
-                3.0      0.013
-                4.0      0.014
-                5.0      0.015
+                1.0      0.2
+                1.3      0.015
+                2.0      0.02
+                3.0      0.025
+                4.0      0.03
+                5.0      0.03
             </tableData>
           </table>
         </product>
@@ -328,43 +327,11 @@
            <property>metrics/Sw-sqft</property>
            <property>metrics/bw-ft</property>
            <property>fcs/rudder-pos-rad</property>
-           <value>-0.1</value>
+           <value>-0.6</value>
        </product>
     </function>
 </axis>
 
-
-
-
-
  </aerodynamics>
-
-    <!--output name="J246.csv" type="CSV" rate="10">
-      <simulation> OFF </simulation>
-      <atmosphere> ON </atmosphere>
-      <massprops> ON </massprops>
-      <aerosurfaces> OFF </aerosurfaces>
-      <rates> ON </rates>
-      <velocities> ON </velocities>
-      <forces> ON </forces>
-      <moments> ON </moments>
-      <position> ON </position>
-      <propulsion> ON </propulsion>
-      <fcs> ON </fcs>
-      <ground_reactions> OFF </ground_reactions>
-      <coefficients> OFF </coefficients>
-      <property>propulsion/engine[2]/thrust-lbs</property>
-      <property>propulsion/engine[3]/thrust-lbs</property>
-      <property>propulsion/engine[4]/thrust-lbs</property>
-      <property>propulsion/engine[5]/thrust-lbs</property>
-      <property>guidance/upper-stage-flight-flag-switch</property>
-      <property>guidance/upper-stage-flight-flag</property>
-      <property>guidance/executive/MET</property>
-      <property>guidance/executive/current-mode</property>
-      <property>propulsion/tank[2]/contents-lbs</property>
-      <property>propulsion/tank[2]/priority</property>
-      <property>propulsion/tank[3]/contents-lbs</property>
-      <property>propulsion/tank[3]/priority</property>
-    </output-->
 
 </fdm_config>

@@ -64,10 +64,15 @@ def dinstance_between_simObj_agent(own_simObj, target_agent):
     lat0 = own_simObj.get_lat_gc_deg()
     lon0 = own_simObj.get_long_gc_deg()
     h0   = own_simObj.get_altitude()
-
-    lat = target_agent.simObj.get_lat_gc_deg()
-    lon = target_agent.simObj.get_long_gc_deg()
-    h   = target_agent.simObj.get_altitude()
+    try:
+        lat = target_agent.simObj.get_lat_gc_deg()
+        lon = target_agent.simObj.get_long_gc_deg()
+        h   = target_agent.simObj.get_altitude()
+    except AttributeError:
+        # this part is for tests.test_missile where target is a simObj directly
+        lat = target_agent.get_lat_gc_deg()
+        lon = target_agent.get_long_gc_deg()
+        h   = target_agent.get_altitude()
     e, n, u = pm.geodetic2enu(lat, lon, h, lat0, lon0, h0, ell=None, deg=True)
     
     return np.linalg.norm(np.array([e, n, u]))

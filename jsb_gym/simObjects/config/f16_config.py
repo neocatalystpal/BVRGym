@@ -57,6 +57,6 @@ aircraft_navigation = ADC.AircraftNavigation(
 
 
 aircraft_simulation =ADC.AircraftSimulation(
-    Sim_time_step=12,
+    Sim_time_step=6,
     Control_time_step=10
 )

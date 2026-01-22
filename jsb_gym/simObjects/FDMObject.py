@@ -100,3 +100,7 @@ class FDMObject(object):
 
     def set_throttle(self, cmd):
         self.fdm['fcs/throttle-cmd-norm'] = cmd
+
+
+    def print_status(self):
+        print(f"Time: {self.get_sim_time_sec():.1f} s, Lat: {self.get_lat_gc_deg():.4f} deg, Long: {self.get_long_gc_deg():.4f} deg, Alt: {self.get_altitude():.1f} m, Mach: {self.get_mach():.3f}, Heading: {self.get_psi():.1f} deg")

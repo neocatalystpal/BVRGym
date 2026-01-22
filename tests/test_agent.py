@@ -1,6 +1,6 @@
 
 from jsb_gym.agents.config import blue_agent
-from jsb_gym.agents.agents import Blue_BVRAgent
+from jsb_gym.agents.agents import RLBVRAgent
 
 
 
@@ -11,5 +11,6 @@ blue_agent.alt = 3000.0
 blue_agent.vel = 250.0
 blue_agent.heading = 0.0
 
-agent = Blue_BVRAgent(blue_agent)
+agent = RLBVRAgent(blue_agent, None)
 print(f"Agent initialized with ammo count: {len(agent.ammo)}")
+exit()

@@ -4,7 +4,7 @@ from gymnasium import spaces
 import numpy as np
 
 from jsb_gym.agents.config import blue_agent, red_agent
-from jsb_gym.agents.agents import BaseBVRAgent, BTBVRAgent
+from jsb_gym.agents.agents import RLBVRAgent, BTBVRAgent
 
 from jsb_gym.utils.geospatial import dinstance_between_agents, bearing_between_agents, to_360
 from jsb_gym.utils.loggers import TacviewLogger
@@ -29,13 +29,12 @@ class BVRBase(gym.Env):
         self.tacview_logger = None
         self.observation = {}
 
-
     def reset(self):
         
-        self.blue_agent = BaseBVRAgent(blue_agent, self)
+        self.blue_agent = RLBVRAgent(blue_agent, self)
         
         self.red_agent = BTBVRAgent(red_agent, self)
-        #self.red_BT = BVRBT(self.red_agent)
+        
         self.red_agent.load_BT(BVRBT)
         
         self.all_agents = [self.blue_agent, self.red_agent]
@@ -59,8 +58,7 @@ class BVRBase(gym.Env):
                 self.tacview_logger.save_logs()
             else:
                 self.tacview_logger.log_flight_data()
-        
-        
+              
     def update_state(self):
         self.update_observation()
         obs_nn = self.from_obs2nn(self.blue_agent)
@@ -93,18 +91,22 @@ class BVRBase(gym.Env):
     def step(self, action):
         # apply action to agent
         action = self.from_nn2agent(action, self.blue_agent)
-        self.blue_agent.apply_action(action)
-        self.red_agent.apply_BT_action()
-        # get new observation
-        self.update_state()
         
-        self.done = self.is_done()
-        # calculate reward
-        # check done
-        
-        reward = 0.0
-
-        return self.state, reward, self.done, (self.blue_agent.healthPoints, self.red_agent.healthPoints)
+        for i in range(self.conf.step_length):
+            # If step_length is 10, this should result aplllying action for 10 sim seconds, unless you changed the sim step time in FDM config
+            self.blue_agent.apply_action(action)
+            self.red_agent.apply_action()
+            # get new observation
+            self.update_state()
+            
+            self.done = self.is_done()
+            # calculate reward
+            # check done
+            
+            self.reward = self.get_reward(self.done)
+            if self.done:
+                break
+        return self.state, self.reward, self.done, (self.blue_agent.healthPoints, self.red_agent.healthPoints)
 
     def get_red_agent_actions(self):
         pass
@@ -155,12 +157,11 @@ class BVRBase(gym.Env):
     def get_reward(self, is_done):
 
         if is_done:
-            if not self.f16r_alive:
+            if self.red_agent.healthPoints <= 0.0:
                 return 1
-                #return self.conf.general['sim_time_max']/self.conf.general['r_step']
-            elif not self.f16_alive:
+
+            elif self.red_agent.healthPoints <= 0.0:
                 return -1
-                #return -self.conf.general['sim_time_max']/self.conf.general['r_step']
             else:
                 return -1
         else:
@@ -174,15 +175,6 @@ class BVRBase(gym.Env):
         
         if self.blue_agent.simObj.get_sim_time_sec() >= self.conf.max_episode_time:
             return True 
-        # if 
-        # check if any missile hit target or lost
-        # 
-        # check if f16 is alive
-        # check if f16 hit ground
-        # check if all missiles lost
-        # check if max time reached
-        
-        # both out of missiles
         return False
                
 

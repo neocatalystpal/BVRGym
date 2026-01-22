@@ -130,6 +130,9 @@ class AAMBVR(FDMObject):
 
         heading_cmd, altitude_cmd = self.PN.get_guidance(self)
         
+        if self.target_norm > self.conf.missile_navigation.dive_at:
+            altitude_cmd = self.conf.missile_navigation.alt_cruise
+        
         for _ in range(self.missile_simulation_config.Control_time_step):
                 
             aileron_cmd, elevator_cmd, rudder_cmd, throttle_cmd	= self.missile_control.get_control_input(heading_cmd, altitude_cmd)
