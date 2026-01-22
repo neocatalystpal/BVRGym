@@ -36,10 +36,10 @@ terminal 2:
 
 fgfs --fdm=null --native-fdm=socket,in,60,,5550,udp --aircraft=f16-block-52 --airport=ESSA --multiplay=out,10,127.0.0.1,5000 --multiplay=in,10,127.0.0.1,5001
 
-[F16](videos/aircraft.mp4)
+https://github.com/user-attachments/assets/3fcf87ff-1620-43b0-a872-0158c619194b
 
 
-[F16 Control](videos/test_aircraft.mp4)
+https://github.com/user-attachments/assets/ee11d1e6-7404-44f1-8df2-4e457a551fc2
 
 
 ### To test missile (Level 1)
