@@ -31,9 +31,15 @@ python -m tests.test_aircraft.py
 
 Vizualize F16 (Flightgear description below if you have not installed it)
 
+
 terminal 2:
 
 fgfs --fdm=null --native-fdm=socket,in,60,,5550,udp --aircraft=f16-block-52 --airport=ESSA --multiplay=out,10,127.0.0.1,5000 --multiplay=in,10,127.0.0.1,5001
+
+[F16](videos/aircraft.mp4)
+
+
+[F16 Control](videos/test_aircraft.mp4)
 
 
 ### To test missile (Level 1)
@@ -51,6 +57,8 @@ terminal 3:
 fgfs --fdm=null --native-fdm=socket,in,60,,5551,udp --aircraft=ogel --airport=ESSA --multiplay=out,10,127.0.0.1,5001 --multiplay=in,10,127.0.0.1,5000
 
 
+[Missile test](videos/test_missile.mp4)
+
 ### Test Agent
 
 python -m tests.test_agent.py
@@ -62,6 +70,7 @@ python -m tests.test_tacview.py
 
 Tacview data in data_output/tacview
 
+[BVR in tacview](videos/test_tacview.mp4)
 
 
 ## FlightGear
