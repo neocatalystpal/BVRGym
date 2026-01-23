@@ -20,9 +20,9 @@ To test these objects in an isolated scenario, install Flightgear (https://www.f
 ### FlightGear
 FlightGear offers an excellent tool for visualizing the units present in BVRGym. 
 
-sudo add-apt-repository ppa:saiarcot895/flightgear
+`sudo add-apt-repository ppa:saiarcot895/flightgear`
 
-sudo apt update
+`sudo apt update`
 
 More details on https://launchpad.net/~saiarcot895/+archive/ubuntu/flightgear
 
@@ -53,9 +53,9 @@ https://github.com/user-attachments/assets/3fcf87ff-1620-43b0-a872-0158c619194b
 
 terminal 2:
 
-```python
+`
 python -m tests.test_aircraft.py
-```
+`
 
 
 https://github.com/user-attachments/assets/ee11d1e6-7404-44f1-8df2-4e457a551fc2
@@ -72,9 +72,9 @@ terminal 2:
 `fgfs --fdm=null --native-fdm=socket,in,60,,5551,udp --aircraft=ogel --airport=ESSA --multiplay=out,10,127.0.0.1,5001 --multiplay=in,10,127.0.0.1,5000`
 
 terminal 3:
-```python
+`
 python -m tests.test_missile.py
-```
+`
 
 
 https://github.com/user-attachments/assets/edada4ad-bd02-46a3-81dc-c766005f0803
@@ -84,17 +84,17 @@ https://github.com/user-attachments/assets/edada4ad-bd02-46a3-81dc-c766005f0803
 
 Check that all the ammo is loaded.
 
-```python
+`
 python -m tests.test_agent.py
-```
+`
 
 ### Test Tacview (Level 3)
 
 RL agent takes random actions, while the red aircraft is controlled by a behavior tree.
 
-```python
+`
 python -m tests.test_tacview.py
-```
+`
 
 Open tacview (https://www.tacview.net/) and load data in BVRGym/data_output/tacview
 
@@ -104,9 +104,9 @@ https://github.com/user-attachments/assets/23e829d6-33c3-4b63-b559-539241c85105
 
 To start training an agent for BVR air combat, run the following command
 
-```python
+`
 python main.py 
-```
+`
 
 
 
