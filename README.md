@@ -5,10 +5,9 @@ This library's primary purpose is to allow users to explore Beyond Visual Range 
 
 ## Requirments
 The following libraries are required to run BVRGym. 
-The code has been tested with Python 3.9 
+The code has been tested with Python 3.11 
 
-pip install jsbsim pyproj pymap3d torch tensorboard py_trees
-
+`pip install gymnasium jsbsim pymap3d pandas py_trees stable_baselines3 tensorboard`
 
 ## BVRGym
 

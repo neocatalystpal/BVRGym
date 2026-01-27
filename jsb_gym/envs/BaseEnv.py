@@ -29,7 +29,8 @@ class BVRBase(gym.Env):
         self.tacview_logger = None
         self.observation = {}
 
-    def reset(self):
+    def reset(self, seed=None, options=None):
+        super().reset(seed=seed)
         
         self.blue_agent = RLBVRAgent(blue_agent, self)
         
@@ -106,7 +107,7 @@ class BVRBase(gym.Env):
             self.reward = self.get_reward(self.done)
             if self.done:
                 break
-        return self.state, self.reward, self.done, (self.blue_agent.healthPoints, self.red_agent.healthPoints)
+        return self.state, self.reward, self.done, self.max_episode_time_passed(), {'done': self.done, 'trunk': self.max_episode_time_passed()}
 
     def get_red_agent_actions(self):
         pass
@@ -173,6 +174,11 @@ class BVRBase(gym.Env):
                 return True
             
         
+        if self.max_episode_time_passed():
+            return True 
+        return False
+    
+    def max_episode_time_passed(self):
         if self.blue_agent.simObj.get_sim_time_sec() >= self.conf.max_episode_time:
             return True 
         return False
