@@ -1,0 +1,212 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                     BVRGym Training Workflow Diagram                         ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+PHASE 1: SETUP (Do this ONCE)
+═══════════════════════════════════════════════════════════════════════════════
+
+    1. Create Virtual Environment
+    └─► python3 -m venv venv
+        │
+        └─► Isolates project dependencies
+            └─► Prevents system-wide conflicts
+
+    2. Activate Virtual Environment  
+    └─► source venv/bin/activate
+        │
+        └─► Terminal prompt changes to (venv)
+            └─► All python commands use venv packages
+
+    3. Install Dependencies
+    └─► pip install gymnasium jsbsim ... (7 packages)
+        │
+        └─► Takes 5-15 minutes
+            └─► Progress bar shows %
+            └─► Creates library files in venv/
+
+    4. Verify Setup
+    └─► python3 test_setup.py
+        │
+        └─► Tests imports
+        └─► Tests environment creation
+        └─► Tests reward function
+        │
+        └─► ✓ All tests pass = Ready to train
+
+
+PHASE 2: TRAINING (Main work - takes HOURS)
+═══════════════════════════════════════════════════════════════════════════════
+
+    python3 main.py
+    │
+    ├─► PPO Algorithm Starts
+    │   └─► Creates 32 parallel environments
+    │       └─► Each environment: Blue RL Agent vs Red BT Agent
+    │           └─► Collects experience
+    │           └─► Every 2048 steps: Updates neural network
+    │
+    ├─► Logging to TensorBoard
+    │   └─► runs/PPO_X/events.out... (live metrics)
+    │       └─► Reward tracking
+    │       └─► Loss curves
+    │       └─► Training metrics
+    │
+    └─► Saves checkpoint model
+        └─► trained/BVRBase_PPO_5M_improved
+            └─► Saved after 5 million total steps
+
+
+PHASE 3: MONITORING (Run in second terminal)
+═══════════════════════════════════════════════════════════════════════════════
+
+    tensorboard --logdir=runs
+    │
+    ├─► Starts TensorBoard server
+    │   └─► http://localhost:6006
+    │
+    ├─► Real-time metrics dashboard
+    │   ├─► SCALARS tab
+    │   │   ├─► rollout/ep_rew_mean ──► Should increase over time ✓
+    │   │   ├─► rollout/ep_len_mean ──► Should be ~1800 seconds ✓
+    │   │   ├─► train/policy_loss ────► Should decrease ✓
+    │   │   ├─► train/value_loss ─────► Should decrease ✓
+    │   │   └─► train/learning_rate ──► Monitoring constant ✓
+    │   │
+    │   ├─► DISTRIBUTIONS tab
+    │   │   └─► Weight histograms (neural network learning)
+    │   │
+    │   └─► HISTOGRAMS tab
+    │       └─► Value distribution (model confidence)
+    │
+    └─► Update frequency: Every 10-30 seconds
+
+
+THE REWARD SYSTEM (Your Improvements)
+═══════════════════════════════════════════════════════════════════════════════
+
+    Each episode's reward = Sum of:
+
+    ┌──────────────────────────────────────────┐
+    │  Terminal Rewards (End of Episode)       │
+    ├──────────────────────────────────────────┤
+    │  Blue wins (Red dies)     → +1000 ✓✓✓   │
+    │  Blue dies (Red survives) → -1000 ✗✗✗   │
+    │  Timeout (Stalemate)      → -100 ✗       │
+    └──────────────────────────────────────────┘
+                    +
+    ┌──────────────────────────────────────────┐
+    │  Step Rewards (Each second)              │
+    ├──────────────────────────────────────────┤
+    │  Distance reward:    0-10  (closing)     │
+    │  Position reward:    0-5   (behind enemy)│
+    │  Missile launch:     50    (when fired)  │
+    │  Altitude advantage: -2 to 2 (vs enemy)  │
+    │  Speed advantage:    -2 to 2 (vs enemy)  │
+    └──────────────────────────────────────────┘
+
+
+EXPECTED TRAINING PROGRESS
+═══════════════════════════════════════════════════════════════════════════════
+
+Timesteps    Hours   Reward Trend              Agent Behavior
+────────────────────────────────────────────────────────────────
+0-100K       1-2h    ████████░░ (-500)         Random movement
+100K-300K    3-5h    ███████░░░ (-400)         Learning basics
+300K-500K    5-8h    ██████░░░░ (-300)         Chasing enemy
+500K-1M      10-15h  █████░░░░░ (-100)         ⭐ Missile launches!
+1M-2M        20-30h  ███░░░░░░░ (0)            Tactical improvements
+2M-3M        30-45h  ██░░░░░░░░ (+50)          Strategy refinement
+3M-5M        50-80h  █░░░░░░░░░ (+100+)        ⭐ Convergence!
+
+Legend: ████ = Reward level, ⭐ = Milestone achievement
+
+
+FILE STRUCTURE (After Training)
+═══════════════════════════════════════════════════════════════════════════════
+
+BVRGym/
+├─ runs/                          ◄── TensorBoard logs
+│  ├─ PPO_1/
+│  │  ├─ events.out...            ◄── Training metrics
+│  │  └─ ...
+│  └─ PPO_X/
+│
+├─ trained/                       ◄── Saved models
+│  ├─ BVRBase_PPO_2M              ◄── Old model (before improvements)
+│  └─ BVRBase_PPO_5M_improved     ◄── NEW improved model ✓
+│
+├─ venv/                          ◄── Virtual environment
+│  ├─ bin/
+│  │  ├─ python
+│  │  ├─ pip
+│  │  └─ activate
+│  └─ lib/
+│     └─ python3.12/site-packages/  ◄── All libraries
+│
+└─ data_output/
+   └─ tacview/                    ◄── Combat recordings
+
+
+QUICK COMMAND REFERENCE
+═══════════════════════════════════════════════════════════════════════════════
+
+First Time Setup:
+    bash setup.sh
+
+Manual Setup:
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install gymnasium jsbsim pymap3d pandas py_trees stable_baselines3 tensorboard torch
+
+Start Training:
+    source venv/bin/activate
+    python3 main.py
+
+Monitor Training (new terminal):
+    source venv/bin/activate
+    tensorboard --logdir=runs
+
+Check if Training is Running:
+    ps aux | grep main.py
+
+Stop Training:
+    CTRL+C (in training terminal)
+    or: pkill -f "main.py"
+
+Background Training:
+    nohup python3 main.py > training.log 2>&1 &
+    tail -f training.log
+
+Check GPU/CPU:
+    nvidia-smi (if using GPU)
+    cat /proc/cpuinfo (for CPU info)
+
+
+TENSORBOARD INTERPRETATION GUIDE
+═══════════════════════════════════════════════════════════════════════════════
+
+GOOD SIGNS ✓
+    • ep_rew_mean trending upward (even slowly)
+    • policy_loss decreasing over time
+    • value_loss decreasing over time
+    • fps (frames per second) consistent
+    • No flat lines at episode boundaries
+
+BAD SIGNS ✗
+    • ep_rew_mean stuck at -1000 (agent always losing)
+    • Rewards randomly bouncing (unstable)
+    • policy_loss increasing (learning degradation)
+    • fps dropping to 0 (crash or freeze)
+    • Flat line (training stopped)
+
+OPTIMAL SIGNS ⭐
+    • Smooth upward curve (not jerky)
+    • Reward improvement every 100K steps
+    • Loss curves smooth and decreasing
+    • Consistent fps throughout
+    • Clear convergence around 5M steps
+
+
+═══════════════════════════════════════════════════════════════════════════════
+Ready to start? Run: bash setup.sh && python3 main.py
+═══════════════════════════════════════════════════════════════════════════════

@@ -85,8 +85,9 @@ class BVRBase(gym.Env):
         self.observation['enemy_mach'] = self.red_agent.simObj.get_mach()
         self.observation['enemy_altitude'] = self.red_agent.simObj.get_altitude()
 
-        self.observation['own_missile_active'] = 0
-        self.observation['enemy_missile_active'] = 0
+        # Track active missiles for both agents
+        self.observation['own_missile_active'] = 1 if self.blue_agent.is_own_missile_active() else 0
+        self.observation['enemy_missile_active'] = 1 if self.red_agent.is_own_missile_active() else 0
         
 
     def step(self, action):
@@ -156,17 +157,47 @@ class BVRBase(gym.Env):
 
 
     def get_reward(self, is_done):
-
+        """Enhanced reward function with tactical bonuses for better training"""
+        reward = 0
+        
+        # Terminal rewards (highest priority)
         if is_done:
+            # Win condition: Enemy shot down
             if self.red_agent.healthPoints <= 0.0:
-                return 1
-
-            elif self.red_agent.healthPoints <= 0.0:
-                return -1
+                reward += 1000.0
+            # Loss condition: Blue agent shot down
+            elif self.blue_agent.healthPoints <= 0.0:
+                reward -= 1000.0
+            # Timeout: Stalemate
             else:
-                return -1
-        else:
-            return 0
+                reward -= 100.0
+        
+        # Distance-based reward: Encourage closing to attack range
+        dist = self.observation['d']
+        max_distance = 120e3
+        distance_reward = (max_distance - dist) / max_distance * 10.0
+        reward += max(0, distance_reward)
+        
+        # Tactical positioning: Reward getting behind enemy (low relative bearing)
+        rel_bearing_error = abs(self.observation['bearing'] - self.observation['heading'])
+        if rel_bearing_error > 180:
+            rel_bearing_error = 360 - rel_bearing_error
+        positioning_reward = (90 - rel_bearing_error) / 90.0 * 5.0 if rel_bearing_error < 90 else 0
+        reward += max(0, positioning_reward)
+        
+        # Missile launch reward: Encourage tactical launches
+        if self.blue_agent.is_own_missile_active():
+            reward += 50.0
+        
+        # Altitude advantage reward: Higher is better for energy management
+        alt_diff = (self.observation['altitude'] - self.observation['enemy_altitude']) / 5000.0
+        reward += max(-2, min(2, alt_diff))  # Clamp to [-2, 2]
+        
+        # Speed advantage reward: Mach number matters in BVR
+        mach_diff = (self.observation['mach'] - self.observation['enemy_mach']) * 5.0
+        reward += max(-2, min(2, mach_diff))  # Clamp to [-2, 2]
+        
+        return reward
 
     def is_done(self):
         for agent in self.all_agents:

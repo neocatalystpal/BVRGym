@@ -72,8 +72,11 @@ class BTBVRAgent(BaseBVRAgent):
         heading = self.BT.heading
         altitude = self.BT.altitude
         throttle = 0.49
+        
+        # Red agent now launches missiles tactically
         if self.BT.launch_missile:
             self.launch_missile()
+        
         action = np.array([heading, altitude, throttle])
         super().apply_action(action)
 

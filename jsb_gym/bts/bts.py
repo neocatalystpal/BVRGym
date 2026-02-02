@@ -25,13 +25,16 @@ class MAW_guide_evade_action(pt.behaviour.Behaviour):
     def __init__(self, name, agent):
         super(MAW_guide_evade_action, self).__init__(name)
         self.agent = agent
-        self.offset = 80
-        self.altitude = 7e3
+        self.offset = 80  # Flank offset in degrees
+        self.altitude = 7e3  # Lower altitude for evasion
         
     def update(self):
-        # evade in flank 
+        # Evade in flank to complicate tracking
         heading = to_360(bearing_between_agents(self.agent, self.agent.target))
-        self.heading = (heading + self.offset ) %360
+        # Alternate between left and right flank based on time
+        time_mod = int(self.agent.simObj.get_sim_time_sec()) % 20
+        self.offset = 80 if time_mod < 10 else 280  # Switch flanks dynamically
+        self.heading = (heading + self.offset) % 360
         self.launch_missile = False
         return pt.common.Status.RUNNING
 
@@ -108,9 +111,14 @@ class Pursue_action(pt.behaviour.Behaviour):
         self.launch_missile = False
 
     def update(self):
-        
+        # Adaptive pursuit: get behind target
         heading = to_360(bearing_between_agents(self.agent, self.agent.target))
-        self.heading = (heading + self.offset ) %360        
+        self.heading = (heading + self.offset) % 360
+        
+        # Adaptive altitude: try to get above target for energy advantage
+        enemy_alt = self.agent.target.simObj.get_altitude()
+        self.altitude = max(5e3, min(15e3, enemy_alt + 2000))  # Try to stay 2km above
+        
         return pt.common.Status.RUNNING
 
 class Launch_condition(pt.behaviour.Behaviour):
@@ -130,14 +138,14 @@ class Launch_condition(pt.behaviour.Behaviour):
             return False
 
     def not_in_launch_position(self):
-        # return status about the blue teams missile 
-        if self.is_in_launch_range():
+        # Check if we can launch (in range) and no missile already active
+        if self.is_in_launch_range() and not self.agent.is_own_missile_active():
             return False
         else:
             return True
 
     def update(self):
-        self.feedback_message = "MAW_condition"
+        self.feedback_message = "Launch_condition"
         if self.not_in_launch_position():
             return pt.common.Status.SUCCESS
         else:
